@@ -9,7 +9,7 @@ venv/
 env/
 
 # Database (handled separately for deployment)
-data/rates.db
+# data/rates.db
 
 # IDE / system
 .vscode/
