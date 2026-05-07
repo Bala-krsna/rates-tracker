@@ -51,14 +51,15 @@ def load_fuel():
 # ============================================================
 # HELPERS
 # ============================================================
-def delta_str(today_val, prev_val):
+def delta_info(today_val, prev_val):
+    """Returns (delta_text, color) for st.metric."""
     if today_val is None or prev_val is None:
-        return None
+        return None, "normal"
     diff = today_val - prev_val
     if diff == 0:
-        return "No change"
-    return f"{diff:+.2f} vs previous"
-
+        return "— no change", "off"   # 'off' = gray, no arrow
+    return f"{diff:+.2f} vs previous", "normal"
+    
 def latest_two(df, col):
     s = df.dropna(subset=[col]).sort_values("date")
     if len(s) >= 2:
@@ -134,23 +135,27 @@ g24_today, g24_prev = latest_two(gold_df, "rate_24k")
 p_today, p_prev = latest_two(fuel_df, "petrol")
 d_today, d_prev = latest_two(fuel_df, "diesel")
 
+g22_delta, g22_color = delta_info(g22_today, g22_prev)
+g24_delta, g24_color = delta_info(g24_today, g24_prev)
+p_delta,   p_color   = delta_info(p_today,   p_prev)
+d_delta,   d_color   = delta_info(d_today,   d_prev)
+
 with col1:
     st.metric("Gold 22K (per gram)",
               f"₹{g22_today:,.0f}" if g22_today else "—",
-              delta_str(g22_today, g22_prev))
+              g22_delta, delta_color=g22_color)
 with col2:
     st.metric("Gold 24K (per gram)",
               f"₹{g24_today:,.0f}" if g24_today else "—",
-              delta_str(g24_today, g24_prev))
+              g24_delta, delta_color=g24_color)
 with col3:
     st.metric("Petrol (per litre)",
               f"₹{p_today:.2f}" if p_today else "—",
-              delta_str(p_today, p_prev))
+              p_delta, delta_color=p_color)
 with col4:
     st.metric("Diesel (per litre)",
               f"₹{d_today:.2f}" if d_today else "—",
-              delta_str(d_today, d_prev))
-
+              d_delta, delta_color=d_color)
 st.markdown("---")
 
 # ============================================================
