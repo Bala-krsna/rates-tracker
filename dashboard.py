@@ -57,7 +57,7 @@ def delta_info(today_val, prev_val):
         return None, "normal"
     diff = today_val - prev_val
     if diff == 0:
-        return "— no change", "off"   # 'off' = gray, no arrow
+        return None, "off"   # no text, no arrow when unchanged
     return f"{diff:+.2f} vs previous", "normal"
     
 def latest_two(df, col):
