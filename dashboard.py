@@ -233,16 +233,33 @@ with tab_gold:
             fig.add_trace(go.Scatter(
                 x=gold_f["date"], y=gold_f["rate_22k"],
                 mode="lines+markers", name="22K",
-                line=dict(color="#D4AF37", width=2.5)))
+                line=dict(color="#B8860B", width=2.5, shape="spline"),
+                marker=dict(size=7, line=dict(color="white", width=1)),
+                fill="tozeroy" if karat == "22K" else None,
+                fillcolor="rgba(184, 134, 11, 0.10)",
+                hovertemplate="<b>22K</b><br>%{x|%d %b %Y}<br>₹%{y:,.0f} per gram<extra></extra>"))
         if karat in ("24K", "Both"):
             fig.add_trace(go.Scatter(
                 x=gold_f["date"], y=gold_f["rate_24k"],
                 mode="lines+markers", name="24K",
-                line=dict(color="#FFD700", width=2.5)))
+                line=dict(color="#D4AF37", width=2.5, shape="spline"),
+                marker=dict(size=7, line=dict(color="white", width=1)),
+                fill="tozeroy" if karat == "24K" else None,
+                fillcolor="rgba(212, 175, 55, 0.10)",
+                hovertemplate="<b>24K</b><br>%{x|%d %b %Y}<br>₹%{y:,.0f} per gram<extra></extra>"))
         fig.update_layout(
-            title="Gold Rate Trend (per gram)",
-            xaxis_title="Date", yaxis_title="Rate (₹)",
-            hovermode="x unified", height=450, template="plotly_white")
+            title=dict(text="Gold Rate Trend (per gram)",
+                       font=dict(size=18, color="#1B3024")),
+           xaxis=dict(title="", showgrid=False),
+            yaxis=dict(title="Rate (₹)", gridcolor="#E5E7EB",
+                       tickformat=",.0f"),
+            hovermode="x unified",
+            height=480,
+            template="plotly_white",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=20, r=20, t=60, b=20),
+            legend=dict(orientation="h", y=1.08, x=1, xanchor="right"))
         st.plotly_chart(fig, use_container_width=True)
 
 with tab_fuel:
@@ -253,17 +270,29 @@ with tab_fuel:
         fig.add_trace(go.Scatter(
             x=fuel_f["date"], y=fuel_f["petrol"],
             mode="lines+markers", name="Petrol",
-            line=dict(color="#E74C3C", width=2.5)))
+            line=dict(color="#E74C3C", width=2.5, shape="spline"),
+            marker=dict(size=7, line=dict(color="white", width=1)),
+            hovertemplate="<b>Petrol</b><br>%{x|%d %b %Y}<br>₹%{y:.2f} per litre<extra></extra>"))
         fig.add_trace(go.Scatter(
             x=fuel_f["date"], y=fuel_f["diesel"],
             mode="lines+markers", name="Diesel",
-            line=dict(color="#3498DB", width=2.5)))
+            line=dict(color="#2E7D5B", width=2.5, shape="spline"),
+            marker=dict(size=7, line=dict(color="white", width=1)),
+            hovertemplate="<b>Diesel</b><br>%{x|%d %b %Y}<br>₹%{y:.2f} per litre<extra></extra>"))
         fig.update_layout(
-            title="Fuel Rate Trend (per litre)",
-            xaxis_title="Date", yaxis_title="Rate (₹)",
-            hovermode="x unified", height=450, template="plotly_white")
+            title=dict(text="Fuel Rate Trend (per litre)",
+                       font=dict(size=18, color="#1B3024")),
+            xaxis=dict(title="", showgrid=False),
+            yaxis=dict(title="Rate (₹)", gridcolor="#E5E7EB",
+                       tickformat=".2f"),
+            hovermode="x unified",
+            height=480,
+            template="plotly_white",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=20, r=20, t=60, b=20),
+            legend=dict(orientation="h", y=1.08, x=1, xanchor="right"))
         st.plotly_chart(fig, use_container_width=True)
-
 with tab_data:
     st.markdown("#### Gold Records")
     st.dataframe(
