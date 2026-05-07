@@ -156,7 +156,6 @@ def main():
 
     # 1. Scrape gold
     try:
-         raise Exception("TEST: deliberate failure to verify email alert")
         gold = scrape_gold_bangalore()
         if gold["gold_22k"] and gold["gold_24k"]:
             save_gold_rates(gold)
