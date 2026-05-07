@@ -107,6 +107,83 @@ def scrape_gold_bangalore():
           f"today 22K=₹{gold_22k}, 24K=₹{gold_24k} | "
           f"yesterday 22K=₹{gold_22k_yesterday}, 24K=₹{gold_24k_yesterday}")
     return result
+def scrape_gold_history_bangalore():
+    """Fetches the entire 10-day gold rate history from BankBazaar.
+
+    Returns a list of dicts, each with date and per-gram 22K/24K rates.
+    These come from BankBazaar's 'Last 10 days' table — official end-of-day figures.
+    """
+    from datetime import datetime
+
+    url = "https://www.bankbazaar.com/gold-rate-bangalore.html"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    print(f"🌐 Fetching gold history from {url}...")
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, "lxml")
+
+    history = []
+    tables = soup.find_all("table")
+
+    for table in tables:
+        rows = table.find_all("tr")
+        if len(rows) < 2:
+            continue
+        header_text = rows[0].get_text().lower()
+        if "date" not in header_text:
+            continue
+        if not ("22" in header_text and "24" in header_text):
+            continue
+
+        # Detect grams unit from the header
+        gram_match = re.search(r"(\d+)\s*gram", header_text)
+        grams_per_unit = int(gram_match.group(1)) if gram_match else 1
+
+        # Loop through every data row (skipping header at index 0)
+        for row in rows[1:]:
+            cells = row.find_all(["td", "th"])
+            if len(cells) < 3:
+                continue
+
+            date_text = cells[0].get_text().strip()
+            m22 = re.search(r"₹\s*([\d,]+)", cells[1].get_text())
+            m24 = re.search(r"₹\s*([\d,]+)", cells[2].get_text())
+            if not (m22 and m24):
+                continue
+
+            # Try to parse the date string (e.g., "06 May 2026", "06 May, 2026")
+            parsed_date = None
+            for fmt in ("%d %b %Y", "%d %b, %Y", "%d %B %Y", "%d %B, %Y"):
+                try:
+                    parsed_date = datetime.strptime(date_text, fmt).date().isoformat()
+                    break
+                except ValueError:
+                    continue
+            if not parsed_date:
+                print(f"   ⚠️ Could not parse date: '{date_text}' — skipping")
+                continue
+
+            rate_22k = round(float(m22.group(1).replace(",", "")) / grams_per_unit, 2)
+            rate_24k = round(float(m24.group(1).replace(",", "")) / grams_per_unit, 2)
+
+            history.append({
+                "date": parsed_date,
+                "city": "Bangalore",
+                "gold_22k": rate_22k,
+                "gold_24k": rate_24k,
+                "source": "bankbazaar.com",
+            })
+        break
+
+    print(f"✅ Extracted {len(history)} days of history")
+    return history
 
 if __name__ == "__main__":
     print("=" * 50)
