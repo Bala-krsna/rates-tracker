@@ -35,7 +35,7 @@ jobs:
           git add data/rates.db
           git diff --quiet --cached || git commit -m "Auto-update rates: $(date -u +'%Y-%m-%d %H:%M UTC')"
           git push
-- name: Send email on failure
+      - name: Send email on failure
         if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
