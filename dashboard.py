@@ -68,6 +68,25 @@ def latest_two(df, col):
         return s.iloc[-1][col], None
     return None, None
 
+def month_high_low(df, col, days=30):
+    """Return (high, low, today, position_pct, n_days) over the last N days.
+    position_pct = where today sits between low (0%) and high (100%).
+    n_days = how many days of actual data were used."""
+    if df.empty or col not in df.columns:
+        return None, None, None, None, 0
+    cutoff = df["date"].max() - pd.Timedelta(days=days)
+    recent = df[df["date"] >= cutoff].dropna(subset=[col])
+    if recent.empty:
+        return None, None, None, None, 0
+    high = recent[col].max()
+    low = recent[col].min()
+    today = recent.iloc[-1][col]
+    n_days = len(recent)
+    if high == low:
+        pos = 50
+    else:
+        pos = round((today - low) / (high - low) * 100)
+    return high, low, today, pos, n_days
 # ============================================================
 # LOAD DATA
 # ============================================================
@@ -156,7 +175,48 @@ with col4:
     st.metric("Diesel (per litre)",
               f"₹{d_today:.2f}" if d_today else "—",
               d_delta, delta_color=d_color)
-st.markdown("---")
+m1, m2, m3, m4 = st.columns(4)
+
+def render_range_card(col, label, df, field, fmt="{:.0f}"):
+    high, low, today, pos, n_days = month_high_low(df, field)
+    if high is None:
+        col.info(f"No {label} data yet")
+        return
+    with col:
+        st.markdown(f"**{label}**")
+        st.caption(f"Low ₹{fmt.format(low)} · High ₹{fmt.format(high)}")
+        st.progress(pos / 100)
+        st.caption(f"Today sits at **{pos}%** of the {n_days}-day range")
+
+# Figure out the longest data window we have so the heading is honest
+def _data_days(df, col):
+    if df.empty or col not in df.columns:
+        return 0
+    cutoff = df["date"].max() - pd.Timedelta(days=30)
+    return len(df[(df["date"] >= cutoff)].dropna(subset=[col]))
+
+max_days = max(
+    _data_days(gold_df, "rate_22k"),
+    _data_days(gold_df, "rate_24k"),
+    _data_days(fuel_df, "petrol"),
+    _data_days(fuel_df, "diesel"),
+)
+
+if max_days <= 1:
+    heading = "Recent Snapshot"
+elif max_days < 30:
+    heading = f"Last {max_days} Days at a Glance"
+else:
+    heading = "Last 30 Days at a Glance"
+
+st.subheader(heading)
+
+m1, m2, m3, m4 = st.columns(4)
+
+render_range_card(m1, "Gold 22K", gold_df, "rate_22k")
+render_range_card(m2, "Gold 24K", gold_df, "rate_24k")
+render_range_card(m3, "Petrol",   fuel_df, "petrol", fmt="{:.2f}")
+render_range_card(m4, "Diesel",   fuel_df, "diesel", fmt="{:.2f}")
 
 # ============================================================
 # TABS WITH CHARTS
