@@ -224,6 +224,4 @@ with tab_data:
 # ============================================================
 st.markdown("---")
 st.caption(
-    "Built with Streamlit · Data scraped from BankBazaar · "
-    "Gold rates show official end-of-day figures where available, "
-    "with today's value as a live snapshot.")
+    "Built By Balakrishna")
