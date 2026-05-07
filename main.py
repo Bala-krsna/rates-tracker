@@ -152,15 +152,21 @@ def main():
     print("🚀 STARTING DAILY RATE TRACKER")
     print("=" * 60)
 
+    failures = []  # collect any problems here
+
     # 1. Scrape gold
     try:
         gold = scrape_gold_bangalore()
         if gold["gold_22k"] and gold["gold_24k"]:
             save_gold_rates(gold)
         else:
-            print("⚠️ Gold scrape returned None values, not saving.")
+            msg = "Gold scrape returned None values"
+            print(f"⚠️ {msg}, not saving.")
+            failures.append(msg)
     except Exception as e:
-        print(f"❌ Gold scraping failed: {e}")
+        msg = f"Gold scraping crashed: {e}"
+        print(f"❌ {msg}")
+        failures.append(msg)
 
     # 2. Scrape fuel
     try:
@@ -168,17 +174,29 @@ def main():
         if fuel["petrol"] and fuel["diesel"]:
             save_fuel_rates(fuel)
         else:
-            print("⚠️ Fuel scrape returned None values, not saving.")
+            msg = "Fuel scrape returned None values"
+            print(f"⚠️ {msg}, not saving.")
+            failures.append(msg)
     except Exception as e:
-        print(f"❌ Fuel scraping failed: {e}")
+        msg = f"Fuel scraping crashed: {e}"
+        print(f"❌ {msg}")
+        failures.append(msg)
 
     # 3. Show recent data
     show_recent_data()
 
     print("\n" + "=" * 60)
-    print("✅ DONE!")
-    print("=" * 60)
-
+    if failures:
+        print("⚠️ COMPLETED WITH ERRORS:")
+        for f in failures:
+            print(f"   - {f}")
+        print("=" * 60)
+        # Exit with non-zero code so GitHub Actions marks this as failed
+        import sys
+        sys.exit(1)
+    else:
+        print("✅ DONE!")
+        print("=" * 60)
 
 if __name__ == "__main__":
     main()
