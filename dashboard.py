@@ -11,12 +11,23 @@ DB_PATH = "data/rates.db"
 #=======================================
 # For trendlines
 #=======================================
-def get_trendline(dates, values):
-    """Returns y-values for a straight-line trend through the data."""
-    x_numeric = (dates - dates.min()).dt.days
-    slope, intercept = np.polyfit(x_numeric, values, 1)
-    return slope * x_numeric + intercept
+def get_trendline(dates, values, kind="Linear"):
+    # Drop rows where either date or value is missing
+    df = pd.DataFrame({"d": dates, "v": values}).dropna()
+    if len(df) < 2:
+        return None  # not enough data for a trend
 
+    if kind == "7-day Moving Avg":
+        # Build a series indexed by the original index so it aligns with the chart
+        return values.rolling(window=7, min_periods=1).mean()
+
+    # Linear regression on clean data
+    x_numeric = (df["d"] - df["d"].min()).dt.days
+    slope, intercept = np.polyfit(x_numeric, df["v"], 1)
+
+    # Compute trendline for ALL original dates (including originally-NaN rows)
+    full_x = (dates - df["d"].min()).dt.days
+    return slope * full_x + intercept
 # ============================================================
 # PAGE CONFIG
 # ============================================================
@@ -238,9 +249,10 @@ with tab_gold:
     if gold_f.empty:
         st.info("No gold data in this date range.")
     else:
-        karat = st.radio("Karat", ["22K", "24K", "Both"], horizontal=True, index=2)
-        trend_type = st.radio("Trend type", ["Linear", "7-day Moving Avg"], horizontal=True)
+        karat = st.radio("Karat", ["22K", "24K", "Both"], horizontal=True, index=2, key="gold_karat")
+        trend_type = st.radio("Trend type", ["Linear", "7-day Moving Avg"], horizontal=True, key="gold_trend")
         fig = go.Figure()
+
         if karat in ("22K", "Both"):
             fig.add_trace(go.Scatter(
                 x=gold_f["date"], y=gold_f["rate_22k"],
@@ -250,15 +262,17 @@ with tab_gold:
                 fill="tozeroy" if karat == "22K" else None,
                 fillcolor="rgba(184, 134, 11, 0.10)",
                 hovertemplate="<b>22K</b><br>%{x|%d %b %Y}<br>₹%{y:,.0f} per gram<extra></extra>"))
-            
-            fig.add_trace(go.Scatter(
-            x=gold_f["date"],
-            y=get_trendline(gold_f["date"], gold_f["rate_22k"]),
-            mode="lines", name="22K Trend",
-            line=dict(color="#B8860B", width=1.5, dash="dash"),
-            opacity=0.7,
-            hovertemplate="<b>22K Trend</b><br>₹%{y:,.0f}<extra></extra>"))
-            
+
+            trend_22k = get_trendline(gold_f["date"], gold_f["rate_22k"], trend_type)
+            if trend_22k is not None:
+                fig.add_trace(go.Scatter(
+                    x=gold_f["date"],
+                    y=trend_22k,
+                    mode="lines", name=f"22K {trend_type}",
+                    line=dict(color="#B8860B", width=1.5, dash="dash"),
+                    opacity=0.7,
+                    hovertemplate="<b>22K Trend</b><br>₹%{y:,.0f}<extra></extra>"))
+
         if karat in ("24K", "Both"):
             fig.add_trace(go.Scatter(
                 x=gold_f["date"], y=gold_f["rate_24k"],
@@ -268,17 +282,21 @@ with tab_gold:
                 fill="tozeroy" if karat == "24K" else None,
                 fillcolor="rgba(212, 175, 55, 0.10)",
                 hovertemplate="<b>24K</b><br>%{x|%d %b %Y}<br>₹%{y:,.0f} per gram<extra></extra>"))
-            fig.add_trace(go.Scatter(
-            x=gold_f["date"],
-            y=get_trendline(gold_f["date"], gold_f["rate_24k"]),
-            mode="lines", name="24K Trend",
-            line=dict(color="#D4AF37", width=1.5, dash="dash"),
-            opacity=0.7,
-            hovertemplate="<b>24K Trend</b><br>₹%{y:,.0f}<extra></extra>"))
+
+            trend_24k = get_trendline(gold_f["date"], gold_f["rate_24k"], trend_type)
+            if trend_24k is not None:
+                fig.add_trace(go.Scatter(
+                    x=gold_f["date"],
+                    y=trend_24k,
+                    mode="lines", name=f"24K {trend_type}",
+                    line=dict(color="#D4AF37", width=1.5, dash="dash"),
+                    opacity=0.7,
+                    hovertemplate="<b>24K Trend</b><br>₹%{y:,.0f}<extra></extra>"))
+
         fig.update_layout(
             title=dict(text="Gold Rate Trend (per gram)",
                        font=dict(size=18, color="#1B3024")),
-           xaxis=dict(title="", showgrid=False),
+            xaxis=dict(title="", showgrid=False),
             yaxis=dict(title="Rate (₹)", gridcolor="#E5E7EB",
                        tickformat=",.0f"),
             hovermode="x unified",
@@ -290,26 +308,30 @@ with tab_gold:
             legend=dict(orientation="h", y=1.08, x=1, xanchor="right"))
         st.plotly_chart(fig, use_container_width=True)
 
+
 with tab_fuel:
     if fuel_f.empty:
         st.info("No fuel data in this date range.")
-        trend_type = st.radio("Trend type", ["Linear", "7-day Moving Avg"], horizontal=True, key="fuel_trend")
     else:
+        trend_type = st.radio("Trend type", ["Linear", "7-day Moving Avg"], horizontal=True, key="fuel_trend")
         fig = go.Figure()
+
         fig.add_trace(go.Scatter(
             x=fuel_f["date"], y=fuel_f["petrol"],
             mode="lines+markers", name="Petrol",
             line=dict(color="#E74C3C", width=2.5, shape="spline"),
             marker=dict(size=7, line=dict(color="white", width=1)),
             hovertemplate="<b>Petrol</b><br>%{x|%d %b %Y}<br>₹%{y:.2f} per litre<extra></extra>"))
-        
-        fig.add_trace(go.Scatter(
-            x=fuel_f["date"],
-            y=get_trendline(fuel_f["date"], fuel_f["petrol"]),
-            mode="lines", name="Petrol Trend",
-            line=dict(color="#E74C3C", width=1.5, dash="dash"),
-            opacity=0.7,
-            hovertemplate="<b>Petrol Trend</b><br>₹%{y:.2f}<extra></extra>"))
+
+        trend_petrol = get_trendline(fuel_f["date"], fuel_f["petrol"], trend_type)
+        if trend_petrol is not None:
+            fig.add_trace(go.Scatter(
+                x=fuel_f["date"],
+                y=trend_petrol,
+                mode="lines", name=f"Petrol {trend_type}",
+                line=dict(color="#E74C3C", width=1.5, dash="dash"),
+                opacity=0.7,
+                hovertemplate="<b>Petrol Trend</b><br>₹%{y:.2f}<extra></extra>"))
 
         fig.add_trace(go.Scatter(
             x=fuel_f["date"], y=fuel_f["diesel"],
@@ -317,15 +339,17 @@ with tab_fuel:
             line=dict(color="#2E7D5B", width=2.5, shape="spline"),
             marker=dict(size=7, line=dict(color="white", width=1)),
             hovertemplate="<b>Diesel</b><br>%{x|%d %b %Y}<br>₹%{y:.2f} per litre<extra></extra>"))
-        
-        fig.add_trace(go.Scatter(
-            x=fuel_f["date"],
-            y=get_trendline(fuel_f["date"], fuel_f["petrol"]),
-            mode="lines", name="Petrol Trend",
-            line=dict(color="#E74C3C", width=1.5, dash="dash"),
-            opacity=0.7,
-            hovertemplate="<b>Petrol Trend</b><br>₹%{y:.2f}<extra></extra>"))
-        
+
+        trend_diesel = get_trendline(fuel_f["date"], fuel_f["diesel"], trend_type)
+        if trend_diesel is not None:
+            fig.add_trace(go.Scatter(
+                x=fuel_f["date"],
+                y=trend_diesel,
+                mode="lines", name=f"Diesel {trend_type}",
+                line=dict(color="#2E7D5B", width=1.5, dash="dash"),
+                opacity=0.7,
+                hovertemplate="<b>Diesel Trend</b><br>₹%{y:.2f}<extra></extra>"))
+
         fig.update_layout(
             title=dict(text="Fuel Rate Trend (per litre)",
                        font=dict(size=18, color="#1B3024")),
