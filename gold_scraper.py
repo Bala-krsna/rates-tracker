@@ -69,8 +69,8 @@ def scrape_gold_bangalore():
         print(f"   Today's row:     {[c.get_text().strip() for c in today_cells]}")
 
         if len(today_cells) >= 3:
-            m22 = re.search(r"₹\s*([\d,]+)", today_cells[1].get_text())
-            m24 = re.search(r"₹\s*([\d,]+)", today_cells[2].get_text())
+            m22 = re.search(r"([\d,]{4,})", today_cells[1].get_text())
+            m24 = re.search(r"([\d,]{4,})", today_cells[2].get_text())
             if m22:
                 gold_22k = round(float(m22.group(1).replace(",", "")) / grams_per_unit, 2)
             if m24:
@@ -83,8 +83,8 @@ def scrape_gold_bangalore():
             print(f"   Yesterday's row: {[c.get_text().strip() for c in yest_cells]}")
 
             if len(yest_cells) >= 3:
-                m22y = re.search(r"₹\s*([\d,]+)", yest_cells[1].get_text())
-                m24y = re.search(r"₹\s*([\d,]+)", yest_cells[2].get_text())
+                m22y = re.search(r"([\d,]{4,})", yest_cells[1].get_text())
+                m24y = re.search(r"([\d,]{4,})", yest_cells[2].get_text())
                 if m22y:
                     gold_22k_yesterday = round(
                         float(m22y.group(1).replace(",", "")) / grams_per_unit, 2)
@@ -153,8 +153,8 @@ def scrape_gold_history_bangalore():
                 continue
 
             date_text = cells[0].get_text().strip()
-            m22 = re.search(r"₹\s*([\d,]+)", cells[1].get_text())
-            m24 = re.search(r"₹\s*([\d,]+)", cells[2].get_text())
+            m22 = re.search(r"([\d,]{4,})", today_cells[1].get_text())
+            m24 = re.search(r"([\d,]{4,})", today_cells[2].get_text())
             if not (m22 and m24):
                 continue
 
