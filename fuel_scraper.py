@@ -72,7 +72,7 @@ def fetch_fuel_price(url, headers, fuel_name):
 
         # Find the rupee amount in the row (skip the date cell)
         for cell in cells[1:]:
-            match = re.search(r"₹?\s*([\d,]+\.\d{1,2})", cell.get_text())
+            match = re.search(r"₹?\s*([\d,]+(?:\.\d{1,2})?)", cell.get_text())
             if match:
                 val = float(match.group(1).replace(",", ""))
                 # Sanity check: petrol/diesel typically ₹70-₹130 per litre in India
